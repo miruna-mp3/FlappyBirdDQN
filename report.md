@@ -162,3 +162,98 @@ python test_replay_buffer.py
 ```
 
 Buffer-ul stochează și samplează corect tranziții, respectând capacitatea maximă.
+
+## 5. Algoritmul DQN
+
+### 5.1 Principiul DQN
+
+DQN (Deep Q-Network) combină Q-learning cu rețele neuronale profunde:
+- **Q-learning**: Algoritm clasic de RL pentru învățarea funcției Q(s, a)
+- **Deep Neural Network**: Aproximează Q(s, a) pentru spații de stări mari (imagini)
+
+Ecuația Bellman pentru Q-learning:
+```
+Q(s, a) ← Q(s, a) + α[r + γ max Q(s', a') - Q(s, a)]
+                              a'
+```
+
+### 5.2 Componente principale
+
+**1. Policy Network**
+- Rețeaua care învață activ
+- Primește state și returnează Q-values pentru toate acțiunile
+- Se actualizează la fiecare training step
+
+**2. Target Network**
+- Copie a policy network, actualizată periodic
+- Folosită pentru calcularea target Q-values
+- Stabilizează antrenarea (evită "moving target problem")
+
+**3. Epsilon-Greedy Exploration**
+- Cu probabilitate ε: acțiune random (exploration)
+- Cu probabilitate 1-ε: acțiune cu Q-value maxim (exploitation)
+- ε scade gradual: `ε_start → ε_end` (linear decay)
+
+### 5.3 Algoritmul pas cu pas
+
+```
+1. Inițializare:
+   - Policy network cu ponderi random
+   - Target network = copie policy network
+   - Replay buffer gol
+   - ε = ε_start
+
+2. Pentru fiecare episod:
+   a) Observă state s
+   
+   b) Selectează acțiune:
+      - Cu prob. ε: acțiune random
+      - Altfel: a = argmax Q(s, a)
+                      a
+   
+   c) Execută acțiune, observă (r, s', done)
+   
+   d) Stochează (s, a, r, s', done) în buffer
+   
+   e) Dacă buffer >= batch_size:
+      - Sample batch aleator
+      - Calculează: target = r + γ max Q_target(s', a')  [dacă not done]
+                                  a'
+      - Loss = (Q_policy(s, a) - target)²
+      - Backprop și update policy network
+      - Scade ε
+   
+   f) La fiecare N steps:
+      - Target network ← Policy network
+```
+
+### 5.4 Hiperparametri
+
+| Parametru | Valoare | Descriere |
+|-----------|---------|-----------|
+| Learning rate | 1e-4 | Rata de învățare Adam |
+| Gamma (γ) | 0.99 | Discount factor |
+| Epsilon start | 1.0 | Exploration inițială (100%) |
+| Epsilon end | 0.01 | Exploration finală (1%) |
+| Epsilon decay | 100,000 | Steps pentru decay complet |
+| Batch size | 32 | Tranziții per training step |
+| Buffer capacity | 100,000 | Tranziții în replay buffer |
+| Target update freq | 1,000 | Steps între update-uri target net |
+| Loss function | Smooth L1 (Huber) | Mai robust la outlieri |
+| Optimizer | Adam | Convergență rapidă |
+| Gradient clipping | 10 | Previne exploding gradients |
+
+### 5.5 Tehnici de stabilizare
+
+1. **Experience Replay**: Decorelează experiențele
+2. **Target Network**: Fixează target-ul pentru stabilitate
+3. **Gradient Clipping**: Previne divergența
+4. **Huber Loss**: Mai robust decât MSE
+
+### 5.6 Verificare
+
+```bash
+python test_agent.py
+```
+
+Agentul selectează acțiuni, învață din replay buffer și actualizează epsilon corect.
