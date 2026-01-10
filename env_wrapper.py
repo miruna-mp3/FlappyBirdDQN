@@ -61,7 +61,19 @@ class FlappyBirdWrapper(gym.Wrapper):
         frame = self._preprocess_frame(obs)
         self.frames.append(frame)
         
-        return self._get_stacked_frames(), reward, terminated, truncated, info
+        # Reward shaping: încurajează supraviețuirea
+        # Reward original: +0.1 per frame, +1.0 per tub trecut, -1000 la moarte
+        # Facem reward-ul mai pozitiv pentru învățare
+        # Reward shaping mai agresiv
+        shaped_reward = reward
+        if terminated:
+            shaped_reward = -1  # Penalizare mica
+        elif reward > 1.0:
+            shaped_reward = 10  # Bonus mare pentru tub trecut!
+        else:
+            shaped_reward = 0.1  # Supraviețuire
+        
+        return self._get_stacked_frames(), shaped_reward, terminated, truncated, info
     
     def _get_stacked_frames(self):
         """Returnează stack-ul de frame-uri ca array numpy"""
