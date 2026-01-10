@@ -113,3 +113,52 @@ python test_model.py
 ```
 
 Modelul acceptă input de shape `(batch, 4, 84, 84)` și produce output `(batch, 2)`.
+
+## 4. Experience Replay Buffer
+
+### 4.1 Motivație
+
+În Q-learning clasic, agentul învață imediat din fiecare experiență (s, a, r, s'). Acest lucru creează două probleme:
+- **Corelație temporală**: Experiențele consecutive sunt foarte similare
+- **Ineficiență**: Fiecare experiență este folosită o singură dată
+
+Experience Replay rezolvă ambele probleme.
+
+### 4.2 Principiu de funcționare
+
+Replay Buffer-ul este o structură de tip **FIFO (First-In-First-Out)** cu capacitate fixă:
+1. Stochează tranziții `(state, action, reward, next_state, done)`
+2. Când e plin, cele mai vechi tranziții sunt șterse automat
+3. La fiecare pas de antrenare, se sample aleator un **batch** de tranziții
+4. Rețeaua învață din acest batch, nu din experiențe consecutive
+
+### 4.3 Avantaje
+
+- **Decorelează experiențele**: Sampling aleator elimină corelația temporală
+- **Reutilizare**: Fiecare experiență poate fi folosită în multiple batch-uri
+- **Stabilitate**: Gradient-ul este mai stabil (mediere peste experiențe diverse)
+- **Eficiență**: Învață mai repede din același număr de interacțiuni cu mediul
+
+### 4.4 Implementare
+
+Clasa `ReplayBuffer`:
+- **Capacitate**: 100,000 tranziții (configurabil)
+- **Structură**: `collections.deque` (efficient pentru FIFO)
+- **Metode**:
+  - `push(s, a, r, s', done)`: Adaugă tranziție
+  - `sample(batch_size)`: Returnează batch aleator
+  - `__len__()`: Număr curent de tranziții
+
+### 4.5 Parametri
+
+- **Capacitate buffer**: 100,000 tranziții
+- **Batch size**: 32 (standard pentru DQN)
+- **Tip stocare**: numpy arrays (float32 pentru state/reward, int64 pentru action)
+
+### 4.6 Verificare
+
+```bash
+python test_replay_buffer.py
+```
+
+Buffer-ul stochează și samplează corect tranziții, respectând capacitatea maximă.
