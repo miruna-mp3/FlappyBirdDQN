@@ -347,3 +347,57 @@ Episode  1000 | Reward:  35.20 | Avg(100):  28.67 | Length:  352 | Loss: 0.0198 
 ```
 
 Reward-ul crește gradual pe măsură ce agentul învață să evite tuburile.
+
+## 7. Rezultate
+
+### 7.1 Evoluția antrenării
+
+[COMPLETEAZĂ DUPĂ ANTRENARE - vezi logs din train.py]
+
+- Episoade totale: 5,000
+- Timp total: X ore
+- Device folosit: CPU/GPU
+
+**Progresie reward:**
+- Episoade 1-100: Avg reward ~X
+- Episoade 100-500: Avg reward ~X
+- Episoade 500-1000: Avg reward ~X
+- Episoade 1000-5000: Avg reward ~X
+
+### 7.2 Evaluare finală
+
+**Evaluare pe best model (100 episoade fără randare):**
+```bash
+python play.py --model best_flappy_dqn.pth --no-render --episodes 100
+```
+
+[COMPLETEAZĂ DUPĂ EVALUARE]
+
+Rezultate:
+- Reward mediu: X.XX ± Y.YY
+- Reward max: X.XX
+- Reward min: X.XX
+- Episoade cu reward > 30: X% (obiectiv atins: DA/NU)
+
+### 7.3 Observații
+
+[COMPLETEAZĂ DUPĂ ANTRENARE]
+
+Comportament observat:
+- Agentul învață să...
+- Erori frecvente...
+- Strategii identificate...
+
+### 7.4 Vizualizare
+
+**Demo cu randare:**
+```bash
+python play.py --episodes 10
+```
+
+Se poate observa că agentul [descriere comportament].
+
+### 7.5 Comparație cu baseline
+
+- **Agent random**: ~1-3 puncte (moare rapid)
+- **Agent antrenat**: ~X puncte (de X ori mai bun)
