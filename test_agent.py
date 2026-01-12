@@ -21,25 +21,28 @@ print(f"  Replay buffer size: {len(agent.memory)}")
 
 # Test selectare acțiune
 print("\n✓ Test selectare acțiune...")
-state = np.random.rand(4, 84, 84).astype(np.float32)
+state = np.random.rand(4, 32, 32).astype(np.float32)
 
 # Acțiune cu exploration
-action = agent.select_action(state, training=True)
+action, q_values = agent.select_action(state, training=True)
 print(f"  Acțiune (training mode): {action}")
+print(f"  Q-values: {q_values}")
 assert action in [0, 1], "Acțiune invalidă"
+assert len(q_values) == 2, "Q-values ar trebui să aibă 2 elemente"
 
 # Acțiune greedy
-action = agent.select_action(state, training=False)
+action, q_values = agent.select_action(state, training=False)
 print(f"  Acțiune (eval mode): {action}")
+print(f"  Q-values: {q_values}")
 assert action in [0, 1], "Acțiune invalidă"
 
 # Test stocare tranziții
 print("\n✓ Adăugare tranziții în buffer...")
 for i in range(100):
-    state = np.random.rand(4, 84, 84).astype(np.float32)
+    state = np.random.rand(4, 32, 32).astype(np.float32)
     action = np.random.randint(0, 2)
     reward = np.random.rand()
-    next_state = np.random.rand(4, 84, 84).astype(np.float32)
+    next_state = np.random.rand(4, 32, 32).astype(np.float32)
     done = False
     agent.store_transition(state, action, reward, next_state, done)
 

@@ -34,7 +34,7 @@ def train_dqn(
         n_actions=2,
         lr=1e-3,
         gamma=0.99,
-        epsilon_start=0.95,
+        epsilon_start=1.00,
         epsilon_end=0.00,
         epsilon_decay=10000,
         buffer_capacity=100000,
@@ -63,8 +63,8 @@ def train_dqn(
         losses = []
         
         for step in range(max_steps_per_episode):
-            # Selectează acțiune
-            action = agent.select_action(state, training=True)
+            # Selectează acțiune (returnează (action, q_values))
+            action, _ = agent.select_action(state, training=True)
             
             # Execută acțiune
             next_state, reward, terminated, truncated, info = env.step(action)
@@ -100,7 +100,7 @@ def train_dqn(
             print(f"Episode {episode:5d} | "
                   f"Reward: {episode_reward:6.2f} | "
                   f"Avg(100): {avg_reward:6.2f} | "
-                  f"Length: {episode_length:.2f} | "
+                  f"Length: {episode_length:4d} | "
                   f"Loss: {avg_loss:.4f} | "
                   f"ε: {agent.epsilon:.3f} | "
                   f"Buffer: {len(agent.memory):6d} | "
