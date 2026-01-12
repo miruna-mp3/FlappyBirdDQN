@@ -30,9 +30,9 @@ def play_episode(env, agent, render=True, max_steps=10000, show_qvalues=True):
         # selectează acțiune (greedy, fără exploration)
         action, q_values = agent.select_action(state, training=False)
         
-        # afișează Q-values live
+        # afișează Q-values și reward live
         if show_qvalues:
-            print(f"\rStep {step:4d} | Q[do_nothing]={q_values[0]:7.3f} | Q[jump]={q_values[1]:7.3f} | Action: {'JUMP' if action == 1 else 'WAIT'}", end='', flush=True)
+            print(f"\rStep {step:4d} | Q[do_nothing]={q_values[0]:7.3f} | Q[jump]={q_values[1]:7.3f} | Action: {'JUMP' if action == 1 else 'WAIT'} | Reward: {episode_reward:7.2f}", end='', flush=True)
         
         # execută acțiune
         next_state, reward, terminated, truncated, info = env.step(action)
