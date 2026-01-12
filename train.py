@@ -34,7 +34,7 @@ def train_dqn(
         n_actions=2,
         lr=1e-3,
         gamma=0.99,
-        epsilon_start=0.05,
+        epsilon_start=0.95,
         epsilon_end=0.00,
         epsilon_decay=10000,
         buffer_capacity=100000,
