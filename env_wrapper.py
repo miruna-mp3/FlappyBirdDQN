@@ -13,7 +13,7 @@ class FlappyBirdWrapper(gym.Wrapper):
     - normalizare la [0, 1]
     """
     
-    def __init__(self, env, img_size=84, stack_frames=4):
+    def __init__(self, env, img_size=64, stack_frames=10):
         super().__init__(env)
         self.img_size = img_size
         self.stack_frames = stack_frames
