@@ -36,7 +36,7 @@ def train_dqn(
         gamma=0.99,
         epsilon_start=1.00,
         epsilon_end=0.00,
-        epsilon_decay=10000,
+        epsilon_decay=100000,
         buffer_capacity=100000,
         batch_size=32,
         target_update_freq=2500
