@@ -10,6 +10,7 @@ __pycache__/
 venv/
 env/
 ENV/
+logs/
 
 # IDE
 .vscode/
@@ -24,3 +25,4 @@ Thumbs.db
 # Test files (opțional)
 test_*.py
 dummy_model.pth
+.claude/settings.local.json

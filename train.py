@@ -3,6 +3,8 @@ import flappy_bird_gymnasium
 import numpy as np
 from collections import deque
 import time
+import os
+from datetime import datetime
 
 from env_wrapper import FlappyBirdWrapper
 from dqn_agent import DQNAgent
@@ -15,127 +17,129 @@ def train_dqn(
     log_freq=10,
     save_path="flappy_dqn.pth"
 ):
-    """
-    Antrenare DQN pe Flappy Bird.
-    
-    Args:
-        n_episodes: Număr total de episoade
-        max_steps_per_episode: Steps maxime per episod
-        save_freq: Frecvență salvare model (în episoade)
-        log_freq: Frecvență logging (în episoade)
-        save_path: Path pentru salvare model
-    """
-    # Creează mediul
-    env = gym.make("FlappyBird-v0")
+    # creează mediul flappy bird cu preprocesare
+    env = gym.make("FlappyBird-v0", render_mode="rgb_array")
     env = FlappyBirdWrapper(env)
-    
-    # Creează agentul
+
+    # creează agentul dqn cu hiperparametrii optimizați
     agent = DQNAgent(
         n_actions=2,
-        lr=1e-3,
+        lr=3e-5,
         gamma=0.99,
-        epsilon_start=0.80,
-        epsilon_end=0.00,
-        epsilon_decay=100000,
-        buffer_capacity=100000,
+        epsilon_start=0.1,
+        epsilon_end=0.001,
+        epsilon_decay=200000,
+        buffer_capacity=50000,
         batch_size=32,
-        target_update_freq=2500
+        target_update_freq=1000,
+        tau=0.001,
+        observation_steps=10000
     )
-    
-    print(f"Training DQN pe Flappy Bird")
-    print(f"   Device: {agent.device}")
+
+    # creează directorul pentru loguri
+    os.makedirs("logs", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = f"logs/train_{timestamp}.csv"
+
+    # inițializează fișierul csv pentru loguri
+    with open(log_file, "w") as f:
+        f.write("episode,reward,avg_reward,length,loss,epsilon,buffer_size,time\n")
+
+    print(f"Antrenare DQN pe Flappy Bird")
+    print(f"   Dispozitiv: {agent.device}")
     print(f"   Episoade: {n_episodes}")
-    print(f"   Save frequency: {save_freq} episoade")
-    print(f"   Log frequency: {log_freq} episoade\n")
-    
-    # Tracking
+    print(f"   Fază de observare: {agent.observation_steps} pași")
+    print(f"   Fișier log: {log_file}\n")
+
+    # variabile pentru tracking
     episode_rewards = []
     episode_lengths = []
-    recent_rewards = deque(maxlen=100)  # Ultimele 100 episoade
+    recent_rewards = deque(maxlen=100)
     best_avg_reward = -float('inf')
-    
+
     start_time = time.time()
-    
+
+    # bucla principală de antrenare
     for episode in range(1, n_episodes + 1):
         state, _ = env.reset()
         episode_reward = 0
         episode_length = 0
         losses = []
-        
+
+        # rulează un episod complet
         for step in range(max_steps_per_episode):
-            # Selectează acțiune (returnează (action, q_values))
+            # selectează acțiunea folosind epsilon-greedy
             action, _ = agent.select_action(state, training=True)
-            
-            # Execută acțiune
+
+            # execută acțiunea în mediu
             next_state, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
-            
-            # Stochează tranziție
+
+            # stochează tranziția în replay buffer
             agent.store_transition(state, action, reward, next_state, done)
-            
-            # Training step
+
+            # actualizează rețeaua neuronală
             loss = agent.train_step()
             if loss is not None:
                 losses.append(loss)
-            
-            # Update state
+
             state = next_state
             episode_reward += reward
             episode_length += 1
-            
+
             if done:
                 break
-        
-        # Tracking
+
+        # actualizează statisticile
         episode_rewards.append(episode_reward)
         episode_lengths.append(episode_length)
         recent_rewards.append(episode_reward)
-        
-        # Logging
+
+        # afișează progresul la fiecare log_freq episoade
         if episode % log_freq == 0:
             avg_reward = np.mean(recent_rewards)
             avg_loss = np.mean(losses) if losses else 0
             elapsed = time.time() - start_time
-            
-            print(f"Episode {episode:5d} | "
+
+            print(f"Episod {episode:5d} | "
                   f"Reward: {episode_reward:6.2f} | "
-                  f"Avg(100): {avg_reward:6.2f} | "
-                  f"Length: {episode_length:4d} | "
+                  f"Medie(100): {avg_reward:6.2f} | "
+                  f"Lungime: {episode_length:4d} | "
                   f"Loss: {avg_loss:.4f} | "
                   f"ε: {agent.epsilon:.3f} | "
                   f"Buffer: {len(agent.memory):6d} | "
-                  f"Time: {elapsed:.0f}s")
-            
-            # Salvează best model
+                  f"Timp: {elapsed:.0f}s")
+
+            # scrie în fișierul csv
+            with open(log_file, "a") as f:
+                f.write(f"{episode},{episode_reward:.2f},{avg_reward:.2f},{episode_length},{avg_loss:.6f},{agent.epsilon:.4f},{len(agent.memory)},{elapsed:.0f}\n")
+
+            # salvează cel mai bun model
             if avg_reward > best_avg_reward:
                 best_avg_reward = avg_reward
                 agent.save(f"best_{save_path}")
-                print(f"           💾 Best model saved! Avg reward: {best_avg_reward:.2f}")
-        
-        # Salvare periodică
+                print(f"           * NOU RECORD: {best_avg_reward:.2f}")
+
+        # salvare periodică
         if episode % save_freq == 0:
             agent.save(save_path)
-            print(f"           💾 Model saved at episode {episode}")
-    
-    # Salvare finală
+            print(f"           Checkpoint salvat")
+
+    # salvare finală
     agent.save(save_path)
     env.close()
-    
+
     total_time = time.time() - start_time
-    print(f"\n✅ Training finished!")
-    print(f"   Total episodes: {n_episodes}")
-    print(f"   Total time: {total_time/60:.1f} minutes")
-    print(f"   Best avg reward (100 ep): {best_avg_reward:.2f}")
-    print(f"   Final model: {save_path}")
-    print(f"   Best model: best_{save_path}")
-    
+    print(f"\nAntrenare finalizată!")
+    print(f"   Timp total: {total_time/60:.1f} minute")
+    print(f"   Cel mai bun reward mediu: {best_avg_reward:.2f}")
+
     return episode_rewards, episode_lengths
 
 
 if __name__ == "__main__":
-    # Antrenare
     rewards, lengths = train_dqn(
-        n_episodes=500,
+        n_episodes=3000,
         max_steps_per_episode=10000,
         save_freq=100,
         log_freq=10,

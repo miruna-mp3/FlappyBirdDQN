@@ -6,63 +6,80 @@ from PIL import Image
 
 class FlappyBirdWrapper(gym.Wrapper):
     """
-    Wrapper pentru preprocesarea input-ului Flappy Bird:
-    - conversie la grayscale
-    - resize la 32x32
-    - stack de 4 frames
-    - normalizare la [0, 1]
+    wrapper pentru preprocesarea pixelilor flappy bird
     """
-    
-    def __init__(self, env, img_size=32, stack_frames=10):
+
+    def __init__(self, env, img_size=84, stack_frames=4, frame_skip=2, use_binary=True):
         super().__init__(env)
         self.img_size = img_size
         self.stack_frames = stack_frames
-        
-        # deque pentru stocarea frame-urilor
+        self.frame_skip = frame_skip
+        self.use_binary = use_binary
+
+        # stivă pentru ultimele frame-uri (informație temporală)
         self.frames = deque(maxlen=stack_frames)
-        
-        # actualizează observation space
+
+        # definește spațiul de observare pentru gymnasium
         self.observation_space = gym.spaces.Box(
             low=0.0,
             high=1.0,
             shape=(stack_frames, img_size, img_size),
             dtype=np.float32
         )
-    
+
     def _preprocess_frame(self, frame):
-        """conversie RGB -> grayscale -> resize -> normalize"""
-        # conversie la grayscale
+        # conversie la grayscale și resize la 84x84
         img = Image.fromarray(frame).convert('L')
-        
-        # resize
         img = img.resize((self.img_size, self.img_size), Image.BILINEAR)
-        
-        # conversie la numpy și normalizare
-        frame = np.array(img, dtype=np.float32) / 255.0
-        
+        frame = np.array(img, dtype=np.float32)
+
+        # binarizare - elimină fundalul și păstrează doar obiectele importante
+        if self.use_binary:
+            frame = np.where(frame < 150, 1.0, 0.0).astype(np.float32)
+        else:
+            frame = frame / 255.0
+
         return frame
-    
+
     def reset(self, **kwargs):
-        obs, info = self.env.reset(**kwargs)
-        
-        # preprocesează frame-ul inițial
-        frame = self._preprocess_frame(obs)
-        
-        # umple stack-ul cu același frame
+        # resetează mediul și obține primul frame
+        _, info = self.env.reset(**kwargs)
+        rgb_frame = self.env.render()
+        frame = self._preprocess_frame(rgb_frame)
+
+        # umple stiva cu primul frame
         for _ in range(self.stack_frames):
             self.frames.append(frame)
-        
+
         return self._get_stacked_frames(), info
-    
+
     def step(self, action):
-        obs, reward, terminated, truncated, info = self.env.step(action)
-        
-        # preprocesează și adaugă noul frame
-        frame = self._preprocess_frame(obs)
+        total_reward = 0
+        terminated = False
+        truncated = False
+
+        # frame skip - repetă acțiunea pentru mai multe frame-uri
+        for _ in range(self.frame_skip):
+            _, reward, terminated, truncated, info = self.env.step(action)
+            total_reward += reward
+            if terminated or truncated:
+                break
+
+        # preprocesează și adaugă noul frame în stivă
+        rgb_frame = self.env.render()
+        frame = self._preprocess_frame(rgb_frame)
         self.frames.append(frame)
-        
-        return self._get_stacked_frames(), reward, terminated, truncated, info
-    
+
+        # reward shaping - penalizare pentru moarte, bonus pentru supraviețuire
+        if terminated or truncated:
+            total_reward = -1.0
+        else:
+            total_reward += 0.1
+
+        # clipează reward-ul pentru stabilitate
+        clipped_reward = np.clip(total_reward, -1.0, 1.0)
+        return self._get_stacked_frames(), clipped_reward, terminated, truncated, info
+
     def _get_stacked_frames(self):
-        """returnează stack-ul de frame-uri ca array numpy"""
+        # returnează stiva de frame-uri ca tensor numpy
         return np.stack(self.frames, axis=0)
