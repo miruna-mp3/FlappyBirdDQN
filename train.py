@@ -104,7 +104,9 @@ def train_dqn(
             avg_loss = np.mean(losses) if losses else 0
             elapsed = time.time() - start_time
 
-            print(f"  [{episode:5d}]  R {episode_reward:6.2f}  Avg {avg_reward:6.2f}  Len {episode_length:4d}  Loss {avg_loss:.4f}  e {agent.epsilon:.3f}  Buf {len(agent.memory):6d}  T {elapsed:.0f}s")
+            # arată dacă suntem în faza de observare sau antrenare
+            phase = "[OBS]" if agent.steps_done < agent.observation_steps else "[TRN]"
+            print(f"  [{episode:5d}] {phase}  R {episode_reward:6.2f}  Avg {avg_reward:6.2f}  Len {episode_length:4d}  Loss {avg_loss:.4f}  e {agent.epsilon:.3f}  Buf {len(agent.memory):6d}  T {elapsed:.0f}s")
 
             # scrie în fișierul csv
             with open(log_file, "a") as f:

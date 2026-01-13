@@ -3,9 +3,19 @@ import flappy_bird_gymnasium
 import numpy as np
 from collections import deque
 import time
+import os
+from datetime import datetime
 
 from env_wrapper import FlappyBirdWrapper
 from dqn_agent import DQNAgent
+
+
+def log(msg, file=None):
+    # afișează în terminal și scrie în fișier
+    print(msg)
+    if file:
+        file.write(msg + "\n")
+        file.flush()
 
 
 def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
@@ -28,13 +38,20 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
         observation_steps=10000
     )
 
-    print()
-    print("  [ FLAPPY BIRD DQN ]")
-    print()
-    print(f"  Dispozitiv       {agent.device}")
-    print(f"  Episoade         {n_episodes}")
-    print(f"  Fază observare   {agent.observation_steps} pași")
-    print()
+    # creează directorul pentru loguri
+    os.makedirs("logs", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = f"logs/train_v2_{timestamp}.txt"
+    log_file = open(log_path, "w")
+
+    log("", log_file)
+    log("  [ FLAPPY BIRD DQN ]", log_file)
+    log("", log_file)
+    log(f"  Dispozitiv       {agent.device}", log_file)
+    log(f"  Episoade         {n_episodes}", log_file)
+    log(f"  Fază observare   {agent.observation_steps} pași", log_file)
+    log(f"  Log              {log_path}", log_file)
+    log("", log_file)
 
     # variabile pentru tracking
     recent_rewards = deque(maxlen=100)
@@ -77,29 +94,33 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
             avg_reward = np.mean(recent_rewards)
             elapsed = time.time() - start_time
 
-            print(f"  [{episode:4d}]  [Reward] {episode_reward:6.1f}  [Avg] {avg_reward:6.1f}  [Len] {episode_length:4d}  [ε] {agent.epsilon:.4f}  [Buffer] {len(agent.memory):5d}  [T] {elapsed/60:.1f}m")
+            # arată dacă suntem în faza de observare sau antrenare
+            phase = "[OBS]" if agent.steps_done < agent.observation_steps else "[TRN]"
+            log(f"  [{episode:4d}] {phase}  [Reward] {episode_reward:6.1f}  [Avg] {avg_reward:6.1f}  [Len] {episode_length:4d}  [ε] {agent.epsilon:.4f}  [Buffer] {len(agent.memory):5d}  [T] {elapsed/60:.1f}m", log_file)
 
             # salvează cel mai bun model
             if avg_reward > best_avg and episode > 100:
                 best_avg = avg_reward
                 agent.save(f"best_{save_path}")
-                print(f"          [ NOU RECORD {best_avg:.1f} ]")
+                log(f"          [ NOU RECORD {best_avg:.1f} ]", log_file)
 
         # salvare periodică
         if episode % 200 == 0:
             agent.save(save_path)
-            print(f"          [ Checkpoint salvat ]")
+            log(f"          [ Checkpoint salvat ]", log_file)
 
     # salvare finală
     agent.save(save_path)
     env.close()
 
-    print()
-    print("  [ ANTRENARE FINALIZATĂ ]")
-    print()
-    print(f"  Timp total       {(time.time() - start_time)/60:.1f} minute")
-    print(f"  Cel mai bun avg  {best_avg:.1f}")
-    print()
+    log("", log_file)
+    log("  [ ANTRENARE FINALIZATĂ ]", log_file)
+    log("", log_file)
+    log(f"  Timp total       {(time.time() - start_time)/60:.1f} minute", log_file)
+    log(f"  Cel mai bun avg  {best_avg:.1f}", log_file)
+    log("", log_file)
+
+    log_file.close()
 
 
 if __name__ == "__main__":
