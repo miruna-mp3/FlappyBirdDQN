@@ -28,13 +28,13 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
         observation_steps=10000
     )
 
-    print("=" * 60)
-    print("FLAPPY BIRD DQN")
-    print("=" * 60)
-    print(f"Dispozitiv: {agent.device}")
-    print(f"Episoade: {n_episodes}")
-    print(f"Fază de observare: {agent.observation_steps} pași")
-    print("=" * 60 + "\n")
+    print()
+    print("  [ FLAPPY BIRD DQN ]")
+    print()
+    print(f"  Dispozitiv       {agent.device}")
+    print(f"  Episoade         {n_episodes}")
+    print(f"  Fază observare   {agent.observation_steps} pași")
+    print()
 
     # variabile pentru tracking
     recent_rewards = deque(maxlen=100)
@@ -77,34 +77,29 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
             avg_reward = np.mean(recent_rewards)
             elapsed = time.time() - start_time
 
-            print(f"Episod {episode:4d} | "
-                  f"R: {episode_reward:6.1f} | "
-                  f"Medie: {avg_reward:6.1f} | "
-                  f"Lungime: {episode_length:4d} | "
-                  f"ε: {agent.epsilon:.4f} | "
-                  f"Buffer: {len(agent.memory):5d} | "
-                  f"Timp: {elapsed/60:.1f}m")
+            print(f"  [{episode:4d}]  [Reward] {episode_reward:6.1f}  [Avg] {avg_reward:6.1f}  [Len] {episode_length:4d}  [ε] {agent.epsilon:.4f}  [Buffer] {len(agent.memory):5d}  [T] {elapsed/60:.1f}m")
 
             # salvează cel mai bun model
             if avg_reward > best_avg and episode > 100:
                 best_avg = avg_reward
                 agent.save(f"best_{save_path}")
-                print(f"         * NOU RECORD: {best_avg:.1f}")
+                print(f"          [ NOU RECORD {best_avg:.1f} ]")
 
         # salvare periodică
         if episode % 200 == 0:
             agent.save(save_path)
-            print(f"         Checkpoint salvat")
+            print(f"          [ Checkpoint salvat ]")
 
     # salvare finală
     agent.save(save_path)
     env.close()
 
-    print("\n" + "=" * 60)
-    print("ANTRENARE FINALIZATĂ")
-    print(f"Timp total: {(time.time() - start_time)/60:.1f} minute")
-    print(f"Cel mai bun reward mediu: {best_avg:.1f}")
-    print("=" * 60)
+    print()
+    print("  [ ANTRENARE FINALIZATĂ ]")
+    print()
+    print(f"  Timp total       {(time.time() - start_time)/60:.1f} minute")
+    print(f"  Cel mai bun avg  {best_avg:.1f}")
+    print()
 
 
 if __name__ == "__main__":

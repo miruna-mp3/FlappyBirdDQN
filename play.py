@@ -97,7 +97,8 @@ def play_episode(env, agent, max_steps=10000, show_qvalues=True):
 
         # afișează q-values în timp real
         if show_qvalues:
-            print(f"\rPas {step:4d} | Q[așteaptă]={q_values[0]:7.3f} | Q[sari]={q_values[1]:7.3f} | Acțiune: {'SARI' if action == 1 else 'AȘTEAPTĂ'} | Reward: {episode_reward:7.2f}", end='', flush=True)
+            act_str = "SARI" if action == 1 else "STAI"
+            print(f"\r  [{step:4d}]  Q0 {q_values[0]:7.3f}  Q1 {q_values[1]:7.3f}  [{act_str:4s}]  R {episode_reward:7.2f}", end='', flush=True)
 
         # execută acțiunea în mediu
         next_state, reward, terminated, truncated, info = env.step(action)
@@ -130,30 +131,38 @@ def evaluate_agent(model_path, n_episodes=10, render=True, show_qvalues=True):
     agent = DQNAgent()
     try:
         agent.load(model_path)
-        print(f"Model încărcat: {model_path}")
-        print(f"   Pași antrenați: {agent.steps_done}")
-        print(f"   Epsilon: {agent.epsilon:.4f}\n")
+        print()
+        print(f"  [ MODEL ÎNCĂRCAT ]")
+        print()
+        print(f"  Fișier           {model_path}")
+        print(f"  Pași antrenați   {agent.steps_done}")
+        print(f"  Epsilon          {agent.epsilon:.4f}")
+        print()
     except FileNotFoundError:
-        print(f"Modelul {model_path} nu există!")
-        print(f"   Rulează mai întâi: python train.py")
+        print()
+        print(f"  [ EROARE ]")
+        print()
+        print(f"  Modelul {model_path} nu există")
+        print(f"  Rulează mai întâi: python train.py")
+        print()
         env.close()
         return
 
     rewards = []
     lengths = []
 
-    print(f"Evaluare pe {n_episodes} episoade...\n")
+    print(f"  Evaluare pe {n_episodes} episoade...")
+    print()
 
     for episode in range(1, n_episodes + 1):
-        print(f"\n{'='*60}")
-        print(f"Episod {episode}/{n_episodes}")
-        print('='*60)
+        print()
+        print(f"  [ Episod {episode}/{n_episodes} ]")
 
         reward, length = play_episode(env, agent, show_qvalues=show_qvalues)
         rewards.append(reward)
         lengths.append(length)
 
-        print(f"\nEpisod {episode:2d} | Reward: {reward:6.2f} | Lungime: {length:4d}")
+        print(f"  Reward {reward:6.2f}  Lungime {length:4d}")
 
         if episode < n_episodes:
             time.sleep(0.5)
@@ -164,13 +173,14 @@ def evaluate_agent(model_path, n_episodes=10, render=True, show_qvalues=True):
     max_reward = np.max(rewards)
     min_reward = np.min(rewards)
 
-    print(f"\n{'='*60}")
-    print(f"Statistici finale:")
-    print(f"   Reward mediu:  {avg_reward:.2f} ± {std_reward:.2f}")
-    print(f"   Reward maxim:  {max_reward:.2f}")
-    print(f"   Reward minim:  {min_reward:.2f}")
-    print(f"   Lungime medie: {np.mean(lengths):.0f}")
-    print('='*60)
+    print()
+    print(f"  [ STATISTICI ]")
+    print()
+    print(f"  Reward mediu     {avg_reward:.2f} +/- {std_reward:.2f}")
+    print(f"  Reward maxim     {max_reward:.2f}")
+    print(f"  Reward minim     {min_reward:.2f}")
+    print(f"  Lungime medie    {np.mean(lengths):.0f}")
+    print()
 
     env.close()
     return rewards, lengths

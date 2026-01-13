@@ -45,11 +45,14 @@ def train_dqn(
     with open(log_file, "w") as f:
         f.write("episode,reward,avg_reward,length,loss,epsilon,buffer_size,time\n")
 
-    print(f"Antrenare DQN pe Flappy Bird")
-    print(f"   Dispozitiv: {agent.device}")
-    print(f"   Episoade: {n_episodes}")
-    print(f"   Fază de observare: {agent.observation_steps} pași")
-    print(f"   Fișier log: {log_file}\n")
+    print()
+    print("  [ FLAPPY BIRD DQN ]")
+    print()
+    print(f"  Dispozitiv       {agent.device}")
+    print(f"  Episoade         {n_episodes}")
+    print(f"  Fază observare   {agent.observation_steps} pași")
+    print(f"  Fișier log       {log_file}")
+    print()
 
     # variabile pentru tracking
     episode_rewards = []
@@ -101,14 +104,7 @@ def train_dqn(
             avg_loss = np.mean(losses) if losses else 0
             elapsed = time.time() - start_time
 
-            print(f"Episod {episode:5d} | "
-                  f"Reward: {episode_reward:6.2f} | "
-                  f"Medie(100): {avg_reward:6.2f} | "
-                  f"Lungime: {episode_length:4d} | "
-                  f"Loss: {avg_loss:.4f} | "
-                  f"ε: {agent.epsilon:.3f} | "
-                  f"Buffer: {len(agent.memory):6d} | "
-                  f"Timp: {elapsed:.0f}s")
+            print(f"  [{episode:5d}]  R {episode_reward:6.2f}  Avg {avg_reward:6.2f}  Len {episode_length:4d}  Loss {avg_loss:.4f}  e {agent.epsilon:.3f}  Buf {len(agent.memory):6d}  T {elapsed:.0f}s")
 
             # scrie în fișierul csv
             with open(log_file, "a") as f:
@@ -118,21 +114,24 @@ def train_dqn(
             if avg_reward > best_avg_reward:
                 best_avg_reward = avg_reward
                 agent.save(f"best_{save_path}")
-                print(f"           * NOU RECORD: {best_avg_reward:.2f}")
+                print(f"           [ NOU RECORD {best_avg_reward:.2f} ]")
 
         # salvare periodică
         if episode % save_freq == 0:
             agent.save(save_path)
-            print(f"           Checkpoint salvat")
+            print(f"           [ Checkpoint salvat ]")
 
     # salvare finală
     agent.save(save_path)
     env.close()
 
     total_time = time.time() - start_time
-    print(f"\nAntrenare finalizată!")
-    print(f"   Timp total: {total_time/60:.1f} minute")
-    print(f"   Cel mai bun reward mediu: {best_avg_reward:.2f}")
+    print()
+    print("  [ ANTRENARE FINALIZATĂ ]")
+    print()
+    print(f"  Timp total       {total_time/60:.1f} minute")
+    print(f"  Cel mai bun avg  {best_avg_reward:.2f}")
+    print()
 
     return episode_rewards, episode_lengths
 
