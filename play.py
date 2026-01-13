@@ -24,12 +24,22 @@ class PlayWrapper(FlappyBirdWrapper):
             pygame.init()
             self.screen = pygame.display.set_mode((288, 512))
             pygame.display.set_caption("Flappy Bird DQN")
+            self.font = pygame.font.Font(None, 48)
 
-    def _show_frame(self, rgb_frame):
+        self.score = 0
+
+    def _show_frame(self, rgb_frame, score=None):
         # afișează frame-ul curent în fereastră pygame
         if self.render_display and self.screen is not None:
             surface = pygame.surfarray.make_surface(rgb_frame.swapaxes(0, 1))
             self.screen.blit(surface, (0, 0))
+
+            # afișează scorul pe ecran
+            if score is not None:
+                score_text = self.font.render(str(score), True, (255, 255, 255))
+                score_rect = score_text.get_rect(center=(144, 50))
+                self.screen.blit(score_text, score_rect)
+
             pygame.display.flip()
 
             # verifică dacă utilizatorul închide fereastra
@@ -41,8 +51,9 @@ class PlayWrapper(FlappyBirdWrapper):
     def reset(self, **kwargs):
         _, info = self.env.reset(**kwargs)
         rgb_frame = self.env.render()
+        self.score = 0
 
-        self._show_frame(rgb_frame)
+        self._show_frame(rgb_frame, self.score)
         frame = self._preprocess_frame(rgb_frame)
 
         # inițializează stiva de frame-uri
@@ -60,11 +71,14 @@ class PlayWrapper(FlappyBirdWrapper):
         for _ in range(self.frame_skip):
             _, reward, terminated, truncated, info = self.env.step(action)
             total_reward += reward
+            # actualizează scorul din info
+            if 'score' in info:
+                self.score = info['score']
             if terminated or truncated:
                 break
 
         rgb_frame = self.env.render()
-        self._show_frame(rgb_frame)
+        self._show_frame(rgb_frame, self.score)
         frame = self._preprocess_frame(rgb_frame)
         self.frames.append(frame)
 
@@ -95,13 +109,14 @@ def play_episode(env, agent, max_steps=10000, show_qvalues=True):
         # selectează acțiunea greedy (fără explorare)
         action, q_values = agent.select_action(state, training=False)
 
-        # afișează q-values în timp real
-        if show_qvalues:
-            act_str = "SARI" if action == 1 else "STAI"
-            print(f"\r  [{step:4d}]  Q0 {q_values[0]:7.3f}  Q1 {q_values[1]:7.3f}  [{act_str:4s}]  R {episode_reward:7.2f}", end='', flush=True)
-
         # execută acțiunea în mediu
         next_state, reward, terminated, truncated, info = env.step(action)
+        score = info.get('score', 0)
+
+        # afișează q-values și scor în timp real
+        if show_qvalues:
+            act_str = "SARI" if action == 1 else "STAI"
+            print(f"\r  [{step:4d}]  Q0 {q_values[0]:7.3f}  Q1 {q_values[1]:7.3f}  [{act_str:4s}]  Score {score:3d}  R {episode_reward:7.2f}", end='', flush=True)
         done = terminated or truncated
 
         episode_reward += reward

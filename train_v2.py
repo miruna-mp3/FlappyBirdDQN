@@ -56,7 +56,9 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
     # variabile pentru tracking
     recent_rewards = deque(maxlen=100)
     recent_lengths = deque(maxlen=100)
+    recent_scores = deque(maxlen=100)
     best_avg = -float('inf')
+    best_avg_score = 0
     start_time = time.time()
 
     # bucla principală de antrenare
@@ -64,6 +66,7 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
         state, _ = env.reset()
         episode_reward = 0
         episode_length = 0
+        episode_score = 0
 
         # rulează un episod complet
         for step in range(10000):
@@ -73,6 +76,10 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
             # execută acțiunea
             next_state, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
+
+            # actualizează scorul (tuburi trecute)
+            if 'score' in info:
+                episode_score = info['score']
 
             # stochează și antrenează
             agent.store_transition(state, action, reward, next_state, done)
@@ -88,21 +95,24 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
         # actualizează statisticile
         recent_rewards.append(episode_reward)
         recent_lengths.append(episode_length)
+        recent_scores.append(episode_score)
 
         # afișează progresul
         if episode % 10 == 0:
             avg_reward = np.mean(recent_rewards)
+            avg_score = np.mean(recent_scores)
             elapsed = time.time() - start_time
 
             # arată dacă suntem în faza de observare sau antrenare
             phase = "[OBS]" if agent.steps_done < agent.observation_steps else "[TRN]"
-            log(f"  [{episode:4d}] {phase}  [Reward] {episode_reward:6.1f}  [Avg] {avg_reward:6.1f}  [Len] {episode_length:4d}  [ε] {agent.epsilon:.4f}  [Buffer] {len(agent.memory):5d}  [T] {elapsed/60:.1f}m", log_file)
+            log(f"  [{episode:4d}] {phase}  [Score] {episode_score:3d}  [AvgS] {avg_score:5.1f}  [R] {episode_reward:6.1f}  [AvgR] {avg_reward:6.1f}  [ε] {agent.epsilon:.4f}  [T] {elapsed/60:.1f}m", log_file)
 
             # salvează cel mai bun model
             if avg_reward > best_avg and episode > 100:
                 best_avg = avg_reward
+                best_avg_score = avg_score
                 agent.save(f"best_{save_path}")
-                log(f"          [ NOU RECORD {best_avg:.1f} ]", log_file)
+                log(f"          [ NOU RECORD {best_avg:.1f} | Score {best_avg_score:.1f} ]", log_file)
 
         # salvare periodică
         if episode % 200 == 0:
@@ -118,6 +128,7 @@ def train_v2(n_episodes=3000, save_path="flappy_dqn.pth"):
     log("", log_file)
     log(f"  Timp total       {(time.time() - start_time)/60:.1f} minute", log_file)
     log(f"  Cel mai bun avg  {best_avg:.1f}", log_file)
+    log(f"  Cel mai bun scor {best_avg_score:.1f}", log_file)
     log("", log_file)
 
     log_file.close()
